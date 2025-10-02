@@ -114,8 +114,8 @@ if chat_message:
                 result = utils.execute_chain(chat_message)
         else:
             with st.spinner(ct.SPINNER_CONTACT_TEXT):
-                # Slack機能が未実装の場合のダミー応答
-                result = ct.CONTACT_THANKS_MESSAGE
+                # Gmail転送機能を使用
+                result = utils.send_inquiry_to_gmail(chat_message)
     except Exception as e:
         logger.error(f"{ct.MAIN_PROCESS_ERROR_MESSAGE}\n{e}\n{traceback.format_exc()}")
         st.error(utils.build_error_message(ct.MAIN_PROCESS_ERROR_MESSAGE) + "\n" + traceback.format_exc(), icon=ct.ERROR_ICON)
@@ -125,7 +125,6 @@ if chat_message:
     # 3. 古い会話履歴を削除
     # ==========================================
     utils.delete_old_conversation_log(result)
-
     # ==========================================
     # 4. LLMからの回答表示
     # ==========================================

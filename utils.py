@@ -34,6 +34,9 @@ from docx import Document
 from langchain.output_parsers import CommaSeparatedListOutputParser
 from langchain.chains import LLMChain
 import datetime
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import constants as ct
 
 
@@ -194,15 +197,7 @@ def execute_chain(chat_message: str) -> str:
     if "chat_history" not in ss or not isinstance(ss.chat_history, list):
         ss.chat_history = []
 
-    # 2) RAGチェーンの遅延初期化（無ければここで作る）
-    if "rag_chain" not in ss or ss.rag_chain is None:
-        try:
-            ss.rag_chain = create_rag_chain(ct.DB_ALL_PATH)
-        except Exception as e:
-            logger.exception("RAGチェーン初期化に失敗しました。", exc_info=e)
-            raise
-
-    # 3) 実行
+    # 2) 実行
     try:
         result: Any = ss.rag_chain.invoke({
             "input": chat_message,
@@ -212,7 +207,7 @@ def execute_chain(chat_message: str) -> str:
         logger.exception("RAGチェーン実行に失敗しました。", exc_info=e)
         raise
 
-    # 4) 結果の取り出し（返却形式の差異に耐える）
+    # 3) 結果の取り出し（返却形式の差異に耐える）
     answer: str
     if isinstance(result, dict):
         for key in ("answer", "output_text", "result", "output"):
@@ -225,7 +220,7 @@ def execute_chain(chat_message: str) -> str:
     else:
         answer = str(result)
 
-    # 5) 会話履歴へ追記（LangChainのメッセージ型が無い環境でも落ちないように）
+    # 4) 会話履歴へ追記（LangChainのメッセージ型が無い環境でも落ちないように）
     try:
         from langchain.schema import HumanMessage, AIMessage  # v0系
         ss.chat_history.extend([HumanMessage(content=chat_message), AIMessage(content=answer)])
@@ -296,3 +291,64 @@ def adjust_string(s):
     
     # OSがWindows以外の場合はそのまま返す
     return s
+
+
+def send_inquiry_to_gmail(chat_message: str) -> str:
+    """
+    問い合わせメッセージをGmailに転送する
+    
+    Args:
+        chat_message: ユーザーからの問い合わせメッセージ
+        
+    Returns:
+        送信結果メッセージ
+    """
+    try:
+        # 環境変数から設定を取得
+        gmail_user = os.getenv("GMAIL_USER")
+        gmail_password = os.getenv("GMAIL_APP_PASSWORD")  # アプリパスワードを使用
+        to_email = os.getenv("INQUIRY_TO_EMAIL")
+        
+        # 必要な環境変数がない場合はエラー
+        if not all([gmail_user, gmail_password, to_email]):
+            return "Gmail設定が不完全です。管理者にお問い合わせください。"
+        
+        # メールの作成
+        msg = MIMEMultipart()
+        msg['From'] = gmail_user
+        msg['To'] = to_email
+        msg['Subject'] = f"【問い合わせ】AIチャットボットからの転送 - {get_datetime()}"
+        
+        # メール本文の作成
+        body = f"""
+以下の問い合わせがAIチャットボットから転送されました。
+
+【問い合わせ内容】
+{chat_message}
+
+【受信日時】
+{get_datetime()}
+
+【送信元】
+AIチャットボットシステム
+
+このメールは自動送信されています。
+        """
+        
+        msg.attach(MIMEText(body, 'plain', 'utf-8'))
+        
+        # Gmail SMTPサーバーに接続して送信
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()  # TLS暗号化を有効化
+        server.login(gmail_user, gmail_password)
+        text = msg.as_string()
+        server.sendmail(gmail_user, to_email, text)
+        server.quit()
+        
+        return ct.CONTACT_THANKS_MESSAGE
+        
+    except Exception as e:
+        # エラーが発生した場合のログ出力（実際のプロダクションでは適切なログに出力）
+        error_msg = f"Gmail送信エラー: {str(e)}"
+        print(error_msg)  # 開発用
+        return "メール送信中にエラーが発生しました。管理者にお問い合わせください。"

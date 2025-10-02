@@ -13,8 +13,6 @@ from dotenv import load_dotenv
 import streamlit as st
 import tiktoken
 from langchain_openai import ChatOpenAI
-from langchain_community.callbacks.streamlit import StreamlitCallbackHandler
-from langchain_community.utilities import SerpAPIWrapper
 import utils
 import constants as ct
 
@@ -33,7 +31,7 @@ load_dotenv()
 def _ensure_encoder():
     if "enc" not in st.session_state:
         # 使うモデル名（環境変数などから）
-        model = os.getenv("OPENAI_MODEL", "ct.MODEL")
+        model = os.getenv("OPENAI_MODEL", ct.MODEL)
         try:
             # モデルに合うエンコーディングを自動で選ぶ
             st.session_state["enc"] = tiktoken.encoding_for_model(model)
@@ -107,7 +105,7 @@ def initialize_llm():
     """
     if "llm" not in st.session_state:
         st.session_state.llm = ChatOpenAI(
-            model_name=ct.MODEL,
+            model=ct.MODEL,
             temperature=ct.TEMPERATURE,
             streaming=True
             # StreamlitCallbackHandlerを削除（コンテキストエラーの原因）

@@ -28,7 +28,7 @@ def display_sidebar():
     with st.sidebar:
         st.markdown("## 問い合わせモード")
 
-        col1, = st.columns([100])
+        col1, = st.columns([80])
         with col1:
             st.session_state["contact_mode"] = st.selectbox(
                 label="問い合わせモード選択",
