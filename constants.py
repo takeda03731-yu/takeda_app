@@ -8,8 +8,8 @@
 from langchain_community.document_loaders import PyMuPDFLoader
 import openpyxl
 from langchain_community.document_loaders import UnstructuredExcelLoader
-
-
+import utils
+import datetime
 ############################################################
 # 共通変数の定義
 ############################################################
@@ -17,20 +17,21 @@ from langchain_community.document_loaders import UnstructuredExcelLoader
 # ==========================================
 # 画面表示系
 # ==========================================
-APP_NAME = "問い合わせ対応自動化AIエージェント"
+APP_NAME = "工事現場の問い合わせチャットボット"
 CHAT_INPUT_HELPER_TEXT = "こちらからメッセージを送信してください。"
 APP_BOOT_MESSAGE = "アプリが起動されました。"
 USER_ICON_FILE_PATH = "./images/user_icon.jpg"
 AI_ICON_FILE_PATH = "./images/ai_icon.jpg"
 WARNING_ICON = ":material/warning:"
 ERROR_ICON = ":material/error:"
-SPINNER_TEXT = "回答生成中..."
+SPINNER_TEXT = "検索中..."
 SPINNER_CONTACT_TEXT = "問い合わせ内容を弊社担当者に送信中です。画面を操作せず、このままお待ちください。"
 CONTACT_THANKS_MESSAGE = """
     このたびはお問い合わせいただき、誠にありがとうございます。
-    担当者が内容を確認し、3営業日以内にご連絡いたします。
-    ただし問い合わせ内容によっては、ご連絡いたしかねる場合がございます。
-    もしお急ぎの場合は、お電話にてご連絡をお願いいたします。
+    担当者が内容を確認し、対応いたします。
+    ただし土曜日、日曜日、祝日、年末年始などの弊社休業日にいただいたお問い合わせについては、翌営業日の対応となります。
+    ご了承ください。
+    もしお急ぎの場合は、チラシ記載の担当：武田の携帯電話までご連絡ください。
 """
 
 # ==========================================
@@ -108,6 +109,27 @@ DISP_ANSWER_ERROR_MESSAGE = "回答表示に失敗しました。"
 INPUT_TEXT_LIMIT_ERROR_MESSAGE = f"入力されたテキストの文字数が受付上限値（{MAX_ALLOWED_TOKENS}）を超えています。受付上限値を超えないよう、再度入力してください。"
 CONTACT_MODE_OFF = "OFF（AIチャットボットとして利用）"
 CONTACT_MODE_ON = "ON（担当者に直接問い合わせ）"
+
+# ==========================================
+# メール送信フォーマット
+# ==========================================
+EMAIL_FORMAT_TEMPLATE = """
+以下の問い合わせがAIチャットボットから転送されました。
+
+【問い合わせ内容】
+{chat_message}
+
+【受信日時】
+{datetime}
+
+【送信元】
+AIチャットボットシステム
+
+このメールは自動送信されています。
+"""
+
+
+
 
 # ==========================================
 # スタイリング

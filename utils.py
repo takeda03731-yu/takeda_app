@@ -319,21 +319,11 @@ def send_inquiry_to_gmail(chat_message: str) -> str:
         msg['To'] = to_email
         msg['Subject'] = f"【問い合わせ】AIチャットボットからの転送 - {get_datetime()}"
         
-        # メール本文の作成
-        body = f"""
-以下の問い合わせがAIチャットボットから転送されました。
-
-【問い合わせ内容】
-{chat_message}
-
-【受信日時】
-{get_datetime()}
-
-【送信元】
-AIチャットボットシステム
-
-このメールは自動送信されています。
-        """
+        # メール本文の作成（テンプレートを使用）
+        body = ct.EMAIL_FORMAT_TEMPLATE.format(
+            chat_message=chat_message,
+            datetime=get_datetime()
+        )
         
         msg.attach(MIMEText(body, 'plain', 'utf-8'))
         
