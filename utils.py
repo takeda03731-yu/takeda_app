@@ -71,37 +71,37 @@ def create_rag_chain(db_name):
         db_name: RAG化対象のデータを格納するデータベース名
     """
     logger = logging.getLogger(ct.LOGGER_NAME)
-
-    docs_all = []
-    if db_name == ct.DB_ALL_PATH:
-        folders = os.listdir(ct.RAG_TOP_FOLDER_PATH)
-        # 「data」フォルダ直下の各フォルダ名に対して処理
-        for folder_path in folders:
-            if folder_path.startswith("."):
-                continue
-            # フォルダ内の各ファイルのデータをリストに追加
-            add_docs(f"{ct.RAG_TOP_FOLDER_PATH}/{folder_path}", docs_all)
-
-    # OSがWindowsの場合、Unicode正規化と、cp932（Windows用の文字コード）で表現できない文字を除去
-    for doc in docs_all:
-        doc.page_content = adjust_string(doc.page_content)
-        for key in doc.metadata:
-            doc.metadata[key] = adjust_string(doc.metadata[key])
-    
-    text_splitter = CharacterTextSplitter(
-        chunk_size=ct.CHUNK_SIZE,
-        chunk_overlap=ct.CHUNK_OVERLAP,
-        separator="\n",
-    )
-    splitted_docs = text_splitter.split_documents(docs_all)
-
+    # embeddings は 既存DBを読む場合も必要なので先に用意
     embeddings = OpenAIEmbeddings()
 
     # すでに対象のデータベースが作成済みの場合は読み込み、未作成の場合のみ新規作成する
     if os.path.isdir(db_name):
         db = Chroma(persist_directory=db_name, embedding_function=embeddings)
     else:
+        docs_all = []
+        if db_name == ct.DB_ALL_PATH:
+            folders = os.listdir(ct.RAG_TOP_FOLDER_PATH)
+            # 「data」フォルダ直下の各フォルダ名に対して処理
+            for folder_path in folders:
+                if folder_path.startswith("."):
+                    continue
+                # フォルダ内の各ファイルのデータをリストに追加
+                add_docs(f"{ct.RAG_TOP_FOLDER_PATH}/{folder_path}", docs_all)
+
+        # OSがWindowsの場合、Unicode正規化と、cp932（Windows用の文字コード）で表現できない文字を除去
+        for doc in docs_all:
+            doc.page_content = adjust_string(doc.page_content)
+            for key in doc.metadata:
+                doc.metadata[key] = adjust_string(doc.metadata[key])
+        
+        text_splitter = CharacterTextSplitter(
+            chunk_size=ct.CHUNK_SIZE,
+            chunk_overlap=ct.CHUNK_OVERLAP,
+            separator="\n",
+        )
+        splitted_docs = text_splitter.split_documents(docs_all)
         db = Chroma.from_documents(splitted_docs, embedding=embeddings, persist_directory=db_name)
+
     retriever = db.as_retriever(search_kwargs={"k": ct.TOP_K})
 
     question_generator_template = ct.SYSTEM_PROMPT_CREATE_INDEPENDENT_TEXT
@@ -124,10 +124,9 @@ def create_rag_chain(db_name):
     history_aware_retriever = create_history_aware_retriever(
         st.session_state.llm, retriever, question_generator_prompt
     )
-
     question_answer_chain = create_stuff_documents_chain(st.session_state.llm, question_answer_prompt)
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
-
+    
     return rag_chain
 
 
@@ -204,7 +203,7 @@ def execute_chain(chat_message: str) -> str:
             "chat_history": ss.chat_history
         })
     except Exception as e:
-        logger.exception("RAGチェーン実行に失敗しました。", exc_info=e)
+        logger.exception(ct.RAG_CHAIN_EXECUTION_ERROR_MESSAGE, exc_info=e)
         raise
 
     # 3) 結果の取り出し（返却形式の差異に耐える）
@@ -311,13 +310,13 @@ def send_inquiry_to_gmail(chat_message: str) -> str:
         
         # 必要な環境変数がない場合はエラー
         if not all([gmail_user, gmail_password, to_email]):
-            return "Gmail設定が不完全です。管理者にお問い合わせください。"
+            return ct.GMAIL_SETTINGS_ERROR_MESSAGE
         
         # メールの作成
         msg = MIMEMultipart()
         msg['From'] = gmail_user
         msg['To'] = to_email
-        msg['Subject'] = f"【問い合わせ】AIチャットボットからの転送 - {get_datetime()}"
+        msg['Subject'] = f"{ct.CONTACT_FORWARDING_SUBJECT} - {get_datetime()}"
         
         # メール本文の作成（テンプレートを使用）
         body = ct.EMAIL_FORMAT_TEMPLATE.format(
@@ -339,6 +338,6 @@ def send_inquiry_to_gmail(chat_message: str) -> str:
         
     except Exception as e:
         # エラーが発生した場合のログ出力（実際のプロダクションでは適切なログに出力）
-        error_msg = f"Gmail送信エラー: {str(e)}"
+        error_msg = f"{ct.GMAIL_SENDING_ERROR_MESSAGE}: {str(e)}"
         print(error_msg)  # 開発用
-        return "メール送信中にエラーが発生しました。管理者にお問い合わせください。"
+        return ct.GMAIL_SENDING_ERROR_DETAIL_MESSAGE

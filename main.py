@@ -101,7 +101,6 @@ if chat_message:
     # ==========================================
     logger.info({"message": chat_message})
 
-    res_box = st.empty()
     with st.chat_message("user", avatar=ct.USER_ICON_FILE_PATH):
         st.markdown(chat_message)
     
