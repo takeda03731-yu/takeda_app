@@ -16,8 +16,6 @@ from langchain_openai import ChatOpenAI
 import utils
 import constants as ct
 
-
-
 ############################################################
 # 設定関連
 ############################################################
@@ -43,6 +41,10 @@ def initialize():
     """
     画面読み込み時に実行する初期化処理
     """
+    # 言語システムの初期化
+    if 'language' not in st.session_state:
+        st.session_state.language = 'ja'
+    
     # エンコーダーの初期化
     _ensure_encoder()
     # 初期化データの用意

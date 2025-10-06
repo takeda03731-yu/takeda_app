@@ -1,5 +1,6 @@
 """
 このファイルは、画面表示以外の様々な関数定義のファイルです。
+多言語対応版
 """
 
 ############################################################
@@ -39,12 +40,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import constants as ct
 
-
 ############################################################
 # 設定関連
 ############################################################
 load_dotenv()
-
 
 ############################################################
 # 関数定義
@@ -60,8 +59,7 @@ def build_error_message(message):
     Returns:
         エラーメッセージと管理者問い合わせテンプレートの連結テキスト
     """
-    return "\n".join([message, ct.COMMON_ERROR_MESSAGE])
-
+    return "\n".join([message, ct.get_text('COMMON_ERROR_MESSAGE')])
 
 def create_rag_chain(db_name):
     """
@@ -104,7 +102,8 @@ def create_rag_chain(db_name):
 
     retriever = db.as_retriever(search_kwargs={"k": ct.TOP_K})
 
-    question_generator_template = ct.SYSTEM_PROMPT_CREATE_INDEPENDENT_TEXT
+    # 多言語対応：現在の言語に基づいてプロンプトテンプレートを取得
+    question_generator_template = ct.get_text('SYSTEM_PROMPT_CREATE_INDEPENDENT_TEXT')
     question_generator_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", question_generator_template),
@@ -112,7 +111,7 @@ def create_rag_chain(db_name):
             ("human", "{input}"),
         ]
     )
-    question_answer_template = ct.SYSTEM_PROMPT_INQUIRY
+    question_answer_template = ct.get_text('SYSTEM_PROMPT_INQUIRY')
     question_answer_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", question_answer_template),
@@ -128,7 +127,6 @@ def create_rag_chain(db_name):
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
     
     return rag_chain
-
 
 def add_docs(folder_path, docs_all):
     """
@@ -155,7 +153,6 @@ def add_docs(folder_path, docs_all):
             doc.id = str(uuid.uuid4())  # Chroma用にid属性を付与
         docs_all.extend(docs)
 
-
 def delete_old_conversation_log(result):
     """
     古い会話履歴の削除
@@ -176,7 +173,6 @@ def delete_old_conversation_log(result):
         removed_tokens = len(st.session_state.enc.encode(removed_message.content))
         # 過去の会話履歴の合計トークン数から、最も古い会話履歴のトークン数を引く
         st.session_state.total_tokens -= removed_tokens
-
 
 def execute_chain(chat_message: str) -> str:
     """
@@ -203,7 +199,7 @@ def execute_chain(chat_message: str) -> str:
             "chat_history": ss.chat_history
         })
     except Exception as e:
-        logger.exception(ct.RAG_CHAIN_EXECUTION_ERROR_MESSAGE, exc_info=e)
+        logger.exception(ct.get_text('RAG_CHAIN_EXECUTION_ERROR_MESSAGE'), exc_info=e)
         raise
 
     # 3) 結果の取り出し（返却形式の差異に耐える）
@@ -219,7 +215,20 @@ def execute_chain(chat_message: str) -> str:
     else:
         answer = str(result)
 
-    # 4) 会話履歴へ追記（LangChainのメッセージ型が無い環境でも落ちないように）
+    # 4) 「情報が見つからない」場合のチェック（多言語対応）
+    no_doc_keywords = {
+        'ja': ['回答に必要な情報が見つかりませんでした', '情報が見つかりませんでした'],
+        'en': ['not found', 'information necessary', 'was not found']
+    }
+    
+    current_lang = getattr(ss, 'language', 'ja')
+    if current_lang in no_doc_keywords:
+        for keyword in no_doc_keywords[current_lang]:
+            if keyword.lower() in answer.lower():
+                answer = ct.get_text('NO_DOC_MATCH_MESSAGE')
+                break
+
+    # 5) 会話履歴へ追記（LangChainのメッセージ型が無い環境でも落ちないように）
     try:
         from langchain.schema import HumanMessage, AIMessage  # v0系
         ss.chat_history.extend([HumanMessage(content=chat_message), AIMessage(content=answer)])
@@ -233,22 +242,19 @@ def execute_chain(chat_message: str) -> str:
             ss.chat_history.append({"role": "assistant", "content": answer})
 
     logger.info({"message": answer})
-    return answer
 
+    return answer
 
 def get_datetime():
     """
-    現在日時を取得
+    現在日時を取得（日本語フォーマット統一）
 
     Returns:
-        現在日時
+        現在日時（日本語フォーマット）
     """
-
     dt_now = datetime.datetime.now()
     now_datetime = dt_now.strftime('%Y年%m月%d日 %H:%M:%S')
-
     return now_datetime
-
 
 def preprocess_func(text):
     """
@@ -259,14 +265,11 @@ def preprocess_func(text):
     Returns:
         単語分割を実施後のテキスト
     """
-
     tokenizer_obj = dictionary.Dictionary(dict="full").create()
     mode = tokenizer.Tokenizer.SplitMode.A
     tokens = tokenizer_obj.tokenize(text ,mode)
     words = [t.surface().lower().strip() for t in tokens if t.surface().strip()]
-
     return words
-
 
 def adjust_string(s):
     """
@@ -291,10 +294,9 @@ def adjust_string(s):
     # OSがWindows以外の場合はそのまま返す
     return s
 
-
 def send_inquiry_to_gmail(chat_message: str) -> str:
     """
-    問い合わせメッセージをGmailに転送する
+    問い合わせメッセージをGmailに転送する（多言語対応）
     
     Args:
         chat_message: ユーザーからの問い合わせメッセージ
@@ -310,19 +312,31 @@ def send_inquiry_to_gmail(chat_message: str) -> str:
         
         # 必要な環境変数がない場合はエラー
         if not all([gmail_user, gmail_password, to_email]):
-            return ct.GMAIL_SETTINGS_ERROR_MESSAGE
+            return ct.get_text('GMAIL_SETTINGS_ERROR_MESSAGE')
+        
+        # 現在の言語を取得
+        current_lang = getattr(st.session_state, 'language', 'ja')
         
         # メールの作成
         msg = MIMEMultipart()
         msg['From'] = gmail_user
         msg['To'] = to_email
-        msg['Subject'] = f"{ct.CONTACT_FORWARDING_SUBJECT} - {get_datetime()}"
+        msg['Subject'] = f"{ct.get_text('CONTACT_FORWARDING_SUBJECT')} - {get_datetime()}"
         
-        # メール本文の作成（テンプレートを使用）
-        body = ct.EMAIL_FORMAT_TEMPLATE.format(
-            chat_message=chat_message,
-            datetime=get_datetime()
-        )
+        # メール本文の作成（言語に応じて処理）
+        if current_lang == 'en':
+            # 英語選択時：英語と日本語の両方でメール内容を作成
+            body = ct.get_text('EMAIL_FORMAT_TEMPLATE').format(
+                chat_message=chat_message,
+                translated_message=translate_to_japanese(chat_message),
+                datetime=get_datetime(),
+            )
+        else:
+            # 日本語選択時：従来通り日本語のみ
+            body = ct.get_text('EMAIL_FORMAT_TEMPLATE').format(
+                chat_message=chat_message,
+                datetime=get_datetime()
+            )
         
         msg.attach(MIMEText(body, 'plain', 'utf-8'))
         
@@ -334,10 +348,61 @@ def send_inquiry_to_gmail(chat_message: str) -> str:
         server.sendmail(gmail_user, to_email, text)
         server.quit()
         
-        return ct.CONTACT_THANKS_MESSAGE
+        return ct.get_text('CONTACT_THANKS_MESSAGE')
         
     except Exception as e:
-        # エラーが発生した場合のログ出力（実際のプロダクションでは適切なログに出力）
-        error_msg = f"{ct.GMAIL_SENDING_ERROR_MESSAGE}: {str(e)}"
+        # エラーが発生した場合のログ出力
+        error_msg = f"{ct.get_text('GMAIL_SENDING_ERROR_MESSAGE')}: {str(e)}"
         print(error_msg)  # 開発用
-        return ct.GMAIL_SENDING_ERROR_DETAIL_MESSAGE
+        return ct.get_text('GMAIL_SENDING_ERROR_DETAIL_MESSAGE')
+
+def rebuild_rag_chain_for_current_language():
+    """
+    現在の言語に応じてRAGチェーンを再構築
+    """
+    if "rag_chain" in st.session_state:
+        st.session_state.rag_chain = create_rag_chain(ct.DB_ALL_PATH)
+
+def translate_to_japanese(text: str) -> str:
+    """
+    英語のテキストを日本語に翻訳する
+    
+    Args:
+        text: 翻訳対象の英語テキスト
+        
+    Returns:
+        日本語に翻訳されたテキスト
+    """
+    try:
+        from langchain.prompts import PromptTemplate
+        from langchain.chains import LLMChain
+        
+        # 翻訳用のプロンプトテンプレート
+        translation_template = ct.get_text('TRANSLATION_TEMPLATE')
+        
+        translation_prompt = PromptTemplate(
+            input_variables=["english_text"],
+            template=translation_template
+        )
+        
+        # LLMチェーンを作成して翻訳実行
+        translation_chain = LLMChain(
+            llm=st.session_state.llm,
+            prompt=translation_prompt
+        )
+        
+        result = translation_chain.run(english_text=text)
+        return result.strip()
+        
+    except Exception as e:
+        # 翻訳に失敗した場合は元のテキストを返す
+        print(f"Translation error: {str(e)}")
+        return f"[翻訳失敗] {text}"
+
+def rebuild_rag_chain_for_current_language():
+    """
+    現在の言語に応じてRAGチェーンを再構築
+    """
+    if "rag_chain" in st.session_state:
+        st.session_state.rag_chain = create_rag_chain(ct.DB_ALL_PATH)
+

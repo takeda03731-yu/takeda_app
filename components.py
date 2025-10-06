@@ -1,5 +1,6 @@
 """
 このファイルは、画面表示に特化した関数定義のファイルです。
+多言語対応版
 """
 
 ############################################################
@@ -8,48 +9,78 @@
 import logging
 import streamlit as st
 import constants as ct
-
+import utils
 
 ############################################################
 # 関数定義
 ############################################################
 
+def display_language_selector():
+    """
+    言語選択の表示
+    """
+    # 言語定数を取得
+    lang_constants = ct.get_language_constants()
+    
+    st.markdown(lang_constants.LANGUAGE_SELECTION_HEADER)
+    
+    # 現在の言語を取得
+    current_language = getattr(st.session_state, 'language', 'ja')
+    
+    # 言語選択
+    selected_language = st.selectbox(
+        lang_constants.LANGUAGE_SELECTION_TEXT,
+        options=list(lang_constants.SUPPORTED_LANGUAGES.keys()),
+        format_func=lambda x: lang_constants.SUPPORTED_LANGUAGES[x],
+        index=list(lang_constants.SUPPORTED_LANGUAGES.keys()).index(current_language),
+        key="language_selector"
+    )
+    
+    # 言語が変更された場合
+    if st.session_state.language != selected_language:
+        st.session_state.language = selected_language
+        # RAGチェーンを現在の言語で再構築
+        utils.rebuild_rag_chain_for_current_language()
+        st.rerun()  # ページを再読み込み
+
 def display_app_title():
     """
     タイトル表示
     """
-    st.markdown(f"## {ct.APP_NAME}")
-
+    st.markdown(f"## {ct.get_text('APP_NAME')}")
 
 def display_sidebar():
     """
     サイドバーの表示
     """
     with st.sidebar:
-        st.markdown(ct.CONTACT_MODE_HEADER)
-
+        # 言語選択を最初に表示
+        display_language_selector()
+        
+        st.divider()
+        
+        st.markdown(ct.get_text('CONTACT_MODE_HEADER'))
+        
         col1, = st.columns([80])
         with col1:
             st.session_state["contact_mode"] = st.selectbox(
-                label=ct.CONTACT_MODE_SELECTION_TEXT,
-                options=[ct.CONTACT_MODE_OFF, ct.CONTACT_MODE_ON],
+                label=ct.get_text('CONTACT_MODE_SELECTION_TEXT'),
+                options=[ct.get_text('CONTACT_MODE_OFF'), ct.get_text('CONTACT_MODE_ON')],
                 label_visibility="collapsed",
             )
         
         st.divider()
 
-        st.markdown(ct.CONTACT_MODE_DESCRIPTION_TEXT)
-        st.code(ct.CONTACT_MODE_DESCRIPTION_DETAIL_TEXT, wrap_lines=True)
-
+        st.markdown(ct.get_text('CONTACT_MODE_DESCRIPTION_TEXT'))
+        st.code(ct.get_text('CONTACT_MODE_DESCRIPTION_DETAIL_TEXT'), wrap_lines=True)
 
 def display_initial_ai_message():
     """
     AIメッセージの初期表示
     """
     with st.chat_message("assistant", avatar=ct.AI_ICON_FILE_PATH):
-        st.success(ct.CONTACT_MODE_BOT_INTRODUCTION_TEXT)
-        st.warning(ct.CONTACT_MODE_BOT_SPECIFICITY_TEXT, icon=ct.WARNING_ICON)
-
+        st.success(ct.get_text('CONTACT_MODE_BOT_INTRODUCTION_TEXT'))
+        st.warning(ct.get_text('CONTACT_MODE_BOT_SPECIFICITY_TEXT'), icon=ct.get_text('WARNING_ICON'))
 
 def display_conversation_log(chat_message):
     """
@@ -63,3 +94,4 @@ def display_conversation_log(chat_message):
         else:
             with st.chat_message(message["role"], avatar=ct.USER_ICON_FILE_PATH):
                 st.markdown(message["content"])
+
