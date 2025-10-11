@@ -43,6 +43,21 @@ def display_language_selector():
         utils.rebuild_rag_chain_for_current_language()
         st.rerun()  # ページを再読み込み
 
+def display_theme_toggle():
+    """
+    ダークモード切り替えボタンの表示
+    """
+    st.markdown("## 🎨 テーマ切り替え")
+    
+    current_theme = "ダークモード" if st.session_state.get('dark_mode', False) else "ライトモード"
+    
+    # ボタンのテキストを現在のテーマに応じて変更
+    button_text = "🌙 ダークモード" if not st.session_state.get('dark_mode', False) else "☀️ ライトモード"
+    
+    if st.button(button_text, key="theme_toggle", use_container_width=True):
+        st.session_state.dark_mode = not st.session_state.get('dark_mode', False)
+        st.rerun()
+
 def display_app_title():
     """
     タイトル表示
@@ -56,6 +71,11 @@ def display_sidebar():
     with st.sidebar:
         # 言語選択を最初に表示
         display_language_selector()
+        
+        st.divider()
+        
+        # ダークモード切り替えボタン
+        display_theme_toggle()
         
         st.divider()
         

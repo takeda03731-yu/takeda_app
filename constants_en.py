@@ -15,7 +15,7 @@ from langchain_community.document_loaders import UnstructuredExcelLoader
 # ==========================================
 # 画面表示系
 # ==========================================
-APP_NAME = "Construction Site Inquiry Chatbot"
+APP_NAME = "⛑️🏗️Construction Site Inquiry Chatbot"
 CHAT_INPUT_HELPER_TEXT = "Please send your message from here."
 APP_BOOT_MESSAGE = "Application has been started."
 WARNING_ICON = ":material/warning:"
@@ -33,7 +33,7 @@ CONTACT_MODE_SELECTION_TEXT = "Inquiry Mode Selection"
 CONTACT_MODE_DESCRIPTION_TEXT = "**【What is Inquiry Mode?】**"
 CONTACT_MODE_DESCRIPTION_DETAIL_TEXT = "When you turn inquiry mode 'ON' and send a message, it will be delivered directly to the person in charge."
 CONTACT_MODE_BOT_INTRODUCTION_TEXT = "This is a generative AI chatbot that answers questions about this construction work. Please select inquiry mode and ask questions from the chat field at the bottom of the screen."
-CONTACT_MODE_BOT_SPECIFICITY_TEXT = "More specific input will help you get the expected response."
+CONTACT_MODE_BOT_SPECIFICITY_TEXT = "When the inquiry mode is turned off, the inquiry chatbot will still answer your questions."
 CONTACT_MODE_OFF = "OFF (Use as AI chatbot)"
 CONTACT_MODE_ON = "ON (Direct inquiry to staff)"
 

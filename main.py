@@ -26,7 +26,10 @@ if 'language' not in st.session_state:
     st.session_state.language = 'ja'
 
 st.set_page_config(
-    page_title=ct.get_text('APP_NAME')
+    page_title=ct.get_text('APP_NAME'),
+    page_icon="⛑️",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 load_dotenv()
@@ -65,8 +68,8 @@ cn.display_initial_ai_message()
 ############################################################
 # スタイリング処理
 ############################################################
-# 画面装飾を行う「CSS」を記述
-st.markdown(ct.STYLE, unsafe_allow_html=True)
+# ダークモード状態に応じて動的にCSSを適用
+st.markdown(ct.get_current_style(), unsafe_allow_html=True)
 
 ############################################################
 # チャット入力の受け付け

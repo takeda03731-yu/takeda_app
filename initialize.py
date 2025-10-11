@@ -68,6 +68,10 @@ def initialize_session_state():
         st.session_state.chat_history = []
         # 会話履歴の合計トークン数を加算する用の変数
         st.session_state.total_tokens = 0
+    
+    # ダークモードの初期化
+    if "dark_mode" not in st.session_state:
+        st.session_state.dark_mode = False
 
 def initialize_session_id():
     """

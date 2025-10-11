@@ -271,9 +271,12 @@ def preprocess_func(text):
     words = [t.surface().lower().strip() for t in tokens if t.surface().strip()]
     return words
 
+# 軽量キャッシュ用の辞書（グローバル変数）
+_adjust_string_cache = {}
+
 def adjust_string(s):
     """
-    Windows環境でRAGが正常動作するよう調整
+    Windows環境でRAGが正常動作するよう調整（重複保持＋軽量キャッシュ＋簡易正規化）
     
     Args:
         s: 調整を行う文字列
@@ -285,14 +288,30 @@ def adjust_string(s):
     if type(s) is not str:
         return s
 
+    # 【重複保持】元の文字列をキーとしてキャッシュをチェック
+    if s in _adjust_string_cache:
+        return _adjust_string_cache[s]
+
+    # 【軽量キャッシュ】キャッシュサイズ制限（1000件）
+    if len(_adjust_string_cache) > 1000:
+        # 古いエントリを半分削除（FIFO的に）
+        keys_to_remove = list(_adjust_string_cache.keys())[:500]
+        for key in keys_to_remove:
+            del _adjust_string_cache[key]
+
     # OSがWindowsの場合、Unicode正規化と、cp932（Windows用の文字コード）で表現できない文字を除去
     if sys.platform.startswith("win"):
-        s = unicodedata.normalize('NFC', s)
-        s = s.encode("cp932", "ignore").decode("cp932")
+        # 【簡易正規化】NFC正規化 + CP932互換性処理
+        adjusted = unicodedata.normalize('NFC', s)
+        adjusted = adjusted.encode("cp932", "ignore").decode("cp932")
+        
+        # キャッシュに保存
+        _adjust_string_cache[s] = adjusted
+        return adjusted
+    else:
+        # OSがWindows以外の場合はそのまま返す（キャッシュに保存）
+        _adjust_string_cache[s] = s
         return s
-    
-    # OSがWindows以外の場合はそのまま返す
-    return s
 
 def send_inquiry_to_gmail(chat_message: str) -> str:
     """

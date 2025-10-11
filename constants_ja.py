@@ -15,7 +15,7 @@ from langchain_community.document_loaders import UnstructuredExcelLoader
 # ==========================================
 # 画面表示系
 # ==========================================
-APP_NAME = "工事現場の問い合わせチャットボット"
+APP_NAME = "⛑️🏗️工事現場の問い合わせチャットボット"
 CHAT_INPUT_HELPER_TEXT = "こちらからメッセージを送信してください。"
 APP_BOOT_MESSAGE = "アプリが起動されました。"
 WARNING_ICON = ":material/warning:"
@@ -33,7 +33,7 @@ CONTACT_MODE_SELECTION_TEXT = "問い合わせモード選択"
 CONTACT_MODE_DESCRIPTION_TEXT = "**【問い合わせモードとは】**"
 CONTACT_MODE_DESCRIPTION_DETAIL_TEXT = "問い合わせモードを「ON」にしてメッセージを送信すると、担当者に直接届きます。"
 CONTACT_MODE_BOT_INTRODUCTION_TEXT = "こちらは本工事に関する質問にお答えする生成AIチャットボットです。お問い合わせモードを選択し、画面下部のチャット欄から質問してください。"
-CONTACT_MODE_BOT_SPECIFICITY_TEXT = "具体的に入力したほうが期待通りの回答を得やすいです。"
+CONTACT_MODE_BOT_SPECIFICITY_TEXT = "問い合わせモードをOFFにした状態で質問すると、問い合わせチャットボットが質問に答えてくれます。"
 CONTACT_MODE_OFF = "OFF（AIチャットボットとして利用）"
 CONTACT_MODE_ON = "ON（担当者に直接問い合わせ）"
 
