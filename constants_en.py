@@ -104,6 +104,13 @@ TRANSLATION_TEMPLATE = """以下の英語のテキストを自然な日本語に
 日本語翻訳:"""
 
 # ==========================================
+# テーマ切り替え
+# ==========================================
+THEME_TOGGLE_HEADER = "## 🎨 Theme Toggle"
+DARK_MODE_BUTTON_TEXT = "🌙 Dark Mode"
+LIGHT_MODE_BUTTON_TEXT = "☀️ Light Mode"
+
+# ==========================================
 # 言語選択
 # ==========================================
 LANGUAGE_SELECTION_HEADER = "## 言語選択 / Language Selection"

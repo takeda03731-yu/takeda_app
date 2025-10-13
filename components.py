@@ -47,12 +47,10 @@ def display_theme_toggle():
     """
     ダークモード切り替えボタンの表示
     """
-    st.markdown("## 🎨 テーマ切り替え")
-    
-    current_theme = "ダークモード" if st.session_state.get('dark_mode', False) else "ライトモード"
+    st.markdown(ct.get_text('THEME_TOGGLE_HEADER'))
     
     # ボタンのテキストを現在のテーマに応じて変更
-    button_text = "🌙 ダークモード" if not st.session_state.get('dark_mode', False) else "☀️ ライトモード"
+    button_text = ct.get_text('DARK_MODE_BUTTON_TEXT') if not st.session_state.get('dark_mode', False) else ct.get_text('LIGHT_MODE_BUTTON_TEXT')
     
     if st.button(button_text, key="theme_toggle", use_container_width=True):
         st.session_state.dark_mode = not st.session_state.get('dark_mode', False)
