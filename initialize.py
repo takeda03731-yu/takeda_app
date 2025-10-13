@@ -19,17 +19,42 @@ import constants as ct
 ############################################################
 # 設定関連
 ############################################################
-load_dotenv()
+# 環境変数の読み込み（ローカル環境でのみ.envファイルを使用）
+try:
+    load_dotenv()
+except Exception:
+    pass  # Streamlit Community Cloudでは.envファイルが存在しないため、エラーを無視
 
 
 ############################################################
 # 関数定義
 ############################################################
 
+def get_env_var(key, default=None):
+    """
+    環境変数を取得（Streamlit SecretsまたはOS環境変数から）
+    
+    Args:
+        key: 環境変数のキー
+        default: デフォルト値
+    
+    Returns:
+        環境変数の値
+    """
+    # まずStreamlit Secretsから取得を試みる
+    try:
+        if hasattr(st, 'secrets') and key in st.secrets:
+            return st.secrets[key]
+    except Exception:
+        pass
+    
+    # 次にOS環境変数から取得
+    return os.getenv(key, default)
+
 def _ensure_encoder():
     if "enc" not in st.session_state:
         # 使うモデル名（環境変数などから）
-        model = os.getenv("OPENAI_MODEL", ct.MODEL)
+        model = get_env_var("OPENAI_MODEL", ct.MODEL)
         try:
             # モデルに合うエンコーディングを自動で選ぶ
             st.session_state["enc"] = tiktoken.encoding_for_model(model)

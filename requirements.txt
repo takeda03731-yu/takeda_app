@@ -1,0 +1,22 @@
+# Streamlit Community Cloud用の依存関係
+streamlit
+python-dotenv
+langchain
+langchain-community
+langchain-core
+langchain-openai
+langchain-chroma
+langsmith
+openai
+chromadb
+PyMuPDF
+openpyxl
+python-docx
+tiktoken
+SudachiPy
+SudachiDict-full
+unstructured
+rank-bm25
+numpy
+pandas
+requests

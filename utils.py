@@ -43,11 +43,36 @@ import constants as ct
 ############################################################
 # 設定関連
 ############################################################
-load_dotenv()
+# 環境変数の読み込み（ローカル環境でのみ.envファイルを使用）
+try:
+    load_dotenv()
+except Exception:
+    pass  # Streamlit Community Cloudでは.envファイルが存在しないため、エラーを無視
 
 ############################################################
 # 関数定義
 ############################################################
+
+def get_env_var(key, default=None):
+    """
+    環境変数を取得（Streamlit SecretsまたはOS環境変数から）
+    
+    Args:
+        key: 環境変数のキー
+        default: デフォルト値
+    
+    Returns:
+        環境変数の値
+    """
+    # まずStreamlit Secretsから取得を試みる
+    try:
+        if hasattr(st, 'secrets') and key in st.secrets:
+            return st.secrets[key]
+    except Exception:
+        pass
+    
+    # 次にOS環境変数から取得
+    return os.getenv(key, default)
 
 def build_error_message(message):
     """
@@ -325,9 +350,9 @@ def send_inquiry_to_gmail(chat_message: str) -> str:
     """
     try:
         # 環境変数から設定を取得
-        gmail_user = os.getenv("GMAIL_USER")
-        gmail_password = os.getenv("GMAIL_APP_PASSWORD")  # アプリパスワードを使用
-        to_email = os.getenv("INQUIRY_TO_EMAIL")
+        gmail_user = get_env_var("GMAIL_USER")
+        gmail_password = get_env_var("GMAIL_APP_PASSWORD")  # アプリパスワードを使用
+        to_email = get_env_var("INQUIRY_TO_EMAIL")
         
         # 必要な環境変数がない場合はエラー
         if not all([gmail_user, gmail_password, to_email]):

@@ -32,7 +32,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-load_dotenv()
+# 環境変数の読み込み（ローカル環境でのみ.envファイルを使用）
+try:
+    load_dotenv()
+except Exception:
+    pass  # Streamlit Community Cloudでは.envファイルが存在しないため、エラーを無視
 
 logger = logging.getLogger(ct.LOGGER_NAME)
 
