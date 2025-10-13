@@ -1,5 +1,4 @@
 # 基本パッケージ
-python-dotenv
 streamlit
 # Excel読み込み用
 openpyxl
