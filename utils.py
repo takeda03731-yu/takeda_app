@@ -95,7 +95,9 @@ def create_rag_chain(db_name):
     """
     logger = logging.getLogger(ct.LOGGER_NAME)
     # embeddings は 既存DBを読む場合も必要なので先に用意
-    embeddings = OpenAIEmbeddings()
+    # OpenAI API Keyを環境変数から取得（Streamlit Secrets優先）
+    openai_api_key = get_env_var("OPENAI_API_KEY")
+    embeddings = OpenAIEmbeddings(api_key=openai_api_key)
 
     # すでに対象のデータベースが作成済みの場合は読み込み、未作成の場合のみ新規作成する
     if os.path.isdir(db_name):

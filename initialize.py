@@ -135,7 +135,11 @@ def initialize_llm():
     LLMの初期化
     """
     if "llm" not in st.session_state:
+        # OpenAI API Keyを環境変数から取得（Streamlit Secrets優先）
+        openai_api_key = get_env_var("OPENAI_API_KEY")
+        
         st.session_state.llm = ChatOpenAI(
+            api_key=openai_api_key,
             model=ct.MODEL,
             temperature=ct.TEMPERATURE,
             streaming=True
